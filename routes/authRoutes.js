@@ -1,15 +1,15 @@
 const express = require("express");
 const userModel = require("../models/userModel");
 const bcrypt = require("bcrypt");
+const { jsx } = require("@emotion/react");
 
 const router = express.Router();
 
 router.post("/signup", async (req, res) => {
-    const { name, email, password, confirmPassword } = req.body;
-    if (!email || !password || !name || !confirmPassword) {
+    const { name, email, password, } = req.body;
+    console.log(name, email, password);
+    if (!email || !password || !name) {
         return res.status(400).json({ msg: "Please fill all fields" });
-    } else if (password !== confirmPassword) {
-        return res.status(400).json({ msg: "Passwords do not match" });
     }
 
     const existingUser = await userModel.findOne({ email: email });
@@ -34,11 +34,20 @@ router.post("/signup", async (req, res) => {
     });
 
     console.log(req.body);
-    res.send("signup");
+    let sendUser = { ...newUser }
+    delete sendUser._doc.password;
+
+    res.send({
+        msg: "User created",
+        user: sendUser
+
+
+    });
 });
 
 router.post("/login", async (req, res) => {
     const { email, password } = req.body;
+    console.log(email, password);
     if (!email || !password) {
         return res.status(400).json({ msg: "Please fill all fields" });
     }
@@ -50,7 +59,12 @@ router.post("/login", async (req, res) => {
     if (!isMatch) {
         return res.status(400).json({ msg: "Invalid credentials" });
     }
-    res.send("logged in");
+    let sendUser = { ...user }
+    delete sendUser._doc.password;
+    res.send({
+        msg: "login",
+        user: sendUser,
+    });
 });
 
 module.exports = router;

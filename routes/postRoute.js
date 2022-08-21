@@ -84,34 +84,38 @@ router.delete("/:id", async (req, res) => {
                 } else {
                     console.log(user);
                 }
-            }
+            });
             categoryModel.findByIdAndUpdate(product.category, { $pull: { products: product._id } }, (err, category) => {
                 if (err) {
                     console.log(err);
                 } else {
                     console.log(category);
                 }
-            }
+            });
         }
     }
-
-
     );
+    res.send("deleted");
+}
+);
 
-    router.put("/interested/:id", async (req, res) => {
-        const { id } = req.params;
-        console.log(id);
-        const product = await productModel.findById(id + "");
-        console.log(product);
-        product.interestedBuyers.push(req.body.buyer);
-        await product.save((err, product) => {
-            if (err) {
-                console.log(err);
-            } else {
-                console.log(product);
-            }
+router.put("/interested/:id", async (req, res) => {
+    const { id } = req.params;
+    console.log(id);
+    const product = await productModel.findById(id + "");
+    console.log(product);
+    product.interestedBuyers.push(req.body.buyer);
+    await product.save((err, product) => {
+        if (err) {
+            console.log(err);
+        } else {
+            console.log(product);
         }
-        );
+    }
+    );
+    res.send("interest added");
+}
+);
 
 
 
@@ -120,11 +124,4 @@ router.delete("/:id", async (req, res) => {
 
 
 
-
-
-
-
-
-
-
-        module.exports = router;
+module.exports = router;
