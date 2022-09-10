@@ -1,12 +1,14 @@
 const express = require("express");
-const userModel = require("../models/userModel");
+const userModel = require("../models(Schemas)/userModel");
 const bcrypt = require("bcrypt");
-const { jsx } = require("@emotion/react");
-
+const jwt = require("jsonwebtoken");
 const router = express.Router();
 
+
+
+//! Add a new user "/auth/signup"
 router.post("/signup", async (req, res) => {
-    const { name, email, password, } = req.body;
+    const { name, email, password } = req.body;
     console.log(name, email, password);
     if (!email || !password || !name) {
         return res.status(400).json({ msg: "Please fill all fields" });
@@ -34,24 +36,24 @@ router.post("/signup", async (req, res) => {
     });
 
     console.log(req.body);
-    let sendUser = { ...newUser }
+    let sendUser = { ...newUser };
     delete sendUser._doc.password;
 
     res.send({
         msg: "User created",
-        user: sendUser
-
-
+        user: sendUser._doc,
     });
 });
-
+//! Login a new user "/auth/login"
 router.post("/login", async (req, res) => {
     const { email, password } = req.body;
     console.log(email, password);
+
     if (!email || !password) {
         return res.status(400).json({ msg: "Please fill all fields" });
     }
     const user = await userModel.findOne({ email: email });
+    let payload = { email: user.email };
     if (!user) {
         return res.status(400).json({ msg: "User does not exist" });
     }
@@ -59,12 +61,51 @@ router.post("/login", async (req, res) => {
     if (!isMatch) {
         return res.status(400).json({ msg: "Invalid credentials" });
     }
-    let sendUser = { ...user }
+    let sendUser = { ...user };
     delete sendUser._doc.password;
+    let accessToken = jwt.sign(payload, process.env.ACCESS_TOKEN_SECRET, {
+        expiresIn: "10h",
+    });
+    let refreshToken = jwt.sign(payload, process.env.REFRESH_TOKEN_SECRET, {
+        expiresIn: "10h",
+    });
     res.send({
-        msg: "login",
-        user: sendUser,
+        accessToken: accessToken,
+        refreshToken: refreshToken,
+        id: user._id
     });
 });
+//! Get a users details "/auth/:id"
+router.get("/user/:id", async (req, res) => {
+    const userId = req.params.id
+    const user = await userModel.findById(userId);
+    console.log(user);
+    if (user == null) {
+        return res.status(400).send("User not found")
+    }
+    return res.status(200).send(user);
+});
+//! Get a new refrech token
+router.get("/token", async (req, res) => {
+    const refreshToken = req.body.refreshToken;
+    if (!refreshToken) {
+        return res.status(400).send("please Provide Refresh token");
+    }
+    try {
+        let payload = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+        delete payload.exp;
+        delete payload.iat;
+        let newAccessToken = jwt.sign(payload, process.env.ACCESS_TOKEN_SECRET, {
+            expiresIn: "1h",
+        });
+        res.status(200).send({ accessToken: newAccessToken });
+    } catch (err) {
+        res.status(401).json({ error: "invalid Refesh token provided" });
+    }
+});
+
+
+
+
 
 module.exports = router;
